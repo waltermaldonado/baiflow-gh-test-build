@@ -1,20 +1,32 @@
+
 version: 0.2
 
 phases:
   install:
     runtime-versions:
-      python: 3.11
+      python: 3.10
     commands:
       - pip install --upgrade --force-reinstall . "awscli>1.20.30"
-  
+      - pip install --upgrade mlflow sagemaker-mlflow s3fs xgboost
+    
   build:
     commands:
+      - export SAGEMAKER_USER_CONFIG_OVERRIDE="./config.yaml"
       - export PYTHONUNBUFFERED=TRUE
       - export SAGEMAKER_PROJECT_NAME_ID="${SAGEMAKER_PROJECT_NAME}-${SAGEMAKER_PROJECT_ID}"
       - |
-        run-pipeline --module-name pipelines.abalone.pipeline \
+        run-pipeline --module-name pipelines.fromideatoprod.pipeline \
           --role-arn $SAGEMAKER_PIPELINE_ROLE_ARN \
-          --tags "[{\"Key\":\"sagemaker:project-name\", \"Value\":\"${SAGEMAKER_PROJECT_NAME}\"}, {\"Key\":\"sagemaker:project-id\", \"Value\":\"${SAGEMAKER_PROJECT_ID}\"}]" \
-          --kwargs "{\"region\":\"${AWS_REGION}\",\"role\":\"${SAGEMAKER_PIPELINE_ROLE_ARN}\",\"default_bucket\":\"${ARTIFACT_BUCKET}\",\"pipeline_name\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"model_package_group_name\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"base_job_prefix\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"sagemaker_project_name\":\"${SAGEMAKER_PROJECT_NAME}\"}"
-      - echo "Create/Update of the SageMaker Pipeline and execution completed."
-
+          --tags "[{\"Key\":\"sagemaker:project-name\",\"Value\":\"${SAGEMAKER_PROJECT_NAME}\"}, {\"Key\":\"sagemaker:project-id\", \"Value\":\"${SAGEMAKER_PROJECT_ID}\"}]" \
+          --kwargs "{ \
+                \"input_s3_url\":\"s3://sagemaker-us-east-2-100424212843/from-idea-to-prod/xgboost/input/bank-additional-full.csv\", \
+                \"model_package_group_name\":\"pipeline-template-p-w4o55jpntt4m\",\
+                \"pipeline_name_prefix\":\"from-idea-to-prod-pipeline-23-23-28-20\",\
+                \"role\":\"arn:aws:iam::100424212843:role/sagemaker-domain-SageMakerExecutionRole-fxttvke3yjBx\",\
+                \"tracking_server_arn\":\"arn:aws:sagemaker:us-east-2:100424212843:mlflow-tracking-server/mlflow-d-0kxj8plv1vlo\", \
+                \"region\":\"${AWS_REGION}\", \
+                \"sagemaker_project_name\":\"${SAGEMAKER_PROJECT_NAME}\",\
+                \"sagemaker_project_id\":\"${SAGEMAKER_PROJECT_ID}\",\
+                \"bucket_name\":\"${ARTIFACT_BUCKET}\"\
+                    }"
+      - echo "Create/update of the SageMaker Pipeline and a pipeline execution completed."
